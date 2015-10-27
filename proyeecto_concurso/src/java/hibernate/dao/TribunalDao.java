@@ -20,4 +20,5 @@ public interface TribunalDao {
     public void eliminar(Tribunal tribunal);
     public void modificar(Tribunal tribunal);
     public int generarNuevoIdTribunal();
+    public Tribunal obtenerUltimoTribunal();
 }

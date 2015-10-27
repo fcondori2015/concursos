@@ -66,7 +66,7 @@ public class Cargo implements java.io.Serializable {
         this.profesion = profesion;
     }
 
-    public Cargo(int idCargo, Resolucion resolucion, Establecimiento establecimiento, Profesion profesion, String especialidad, String categoria, Integer adicional, String funcion, String areaDeDesempenio, String modalidad, Date fechaActaFormulacionPerfil, String enunciacion) {
+    public Cargo(int idCargo, Resolucion resolucion, Establecimiento establecimiento, Profesion profesion, String especialidad, String categoria, Integer adicional, String funcion, String areaDeDesempenio, String modalidad, Date fechaActaFormulacionPerfil, String enunciacion,int cantidad,boolean esDesierto) {
         this.idCargo = idCargo;
         this.resolucion = resolucion;
         this.establecimiento = establecimiento;
@@ -79,6 +79,8 @@ public class Cargo implements java.io.Serializable {
         this.modalidad = modalidad;
         this.fechaActaFormulacionPerfil = fechaActaFormulacionPerfil;
         this.enunciacion = enunciacion;
+        this.cantidad=cantidad;
+        this.esDesierto=esDesierto;
     }
 
     public Cargo(int idCargo, Resolucion resolucion, Establecimiento establecimiento, Profesion profesion, String especialidad, String categoria, Integer adicional, String funcion, String areaDeDesempenio, String modalidad, Date fechaActaFormulacionPerfil, String enunciacion, Set postulantes) {

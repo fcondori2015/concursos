@@ -73,6 +73,7 @@ public class TribunalDaoImpl extends HibernateUtil implements TribunalDao {
         }
     }
 
+    @Override
     public int generarNuevoIdTribunal() {
 
         Criteria criteria = getSession().createCriteria(Tribunal.class);
@@ -86,4 +87,13 @@ public class TribunalDaoImpl extends HibernateUtil implements TribunalDao {
 
     }
 
+    @Override
+    public Tribunal obtenerUltimoTribunal() {
+        Criteria criteria = getSession().createCriteria(Tribunal.class);
+        criteria.addOrder(Order.desc("idTribunal"));
+        return (Tribunal) criteria.list().get(0);
+
+    }
+
 }
+

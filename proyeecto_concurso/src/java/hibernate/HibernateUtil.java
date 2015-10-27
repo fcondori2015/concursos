@@ -75,7 +75,7 @@ public class HibernateUtil {
 
             //probarHibernate();
             //UTILIZANDO UNA CONSULTA NORMAL
-            String consultaSQL = "SELECT apellido,nombre,numero_documento,sexo,local_id,fecha_de_nacimiento,cuil,tel1,email,direccion FROM \"vw_profesionalCompleto\" WHERE numero_documento = '" + dni + "';";
+            String consultaSQL = "SELECT codigo_de_profesional,dni,numero_documento,apellido,nombre,sexo,localidad_nac,fecha_de_nacimiento,cuil,tel1,email,direccion FROM \"vw_profesionalDatosPersonales\" WHERE numero_documento = '" + dni + "';";
             ResultSet rs = stmt.executeQuery(consultaSQL);
 
             int contadorDeRegistros = 1;

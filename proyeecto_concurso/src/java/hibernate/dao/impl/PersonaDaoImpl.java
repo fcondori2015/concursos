@@ -82,7 +82,9 @@ public class PersonaDaoImpl extends HibernateUtil implements PersonaDao {
     public Persona buscarPorDni(Integer dni) {
         Criteria criteria = getSession().createCriteria(Persona.class);
         criteria.setMaxResults(1);
+        
         criteria.add(Restrictions.eq("dni", dni));
+                System.out.println("PersonaDaoImpl.buscarDNI(" + dni + ") => Cantidad de registros coincidentes: " + criteria.list().size());
         if (criteria.list().size() > 0) {
             return (Persona) criteria.list().get(0);
         } else {

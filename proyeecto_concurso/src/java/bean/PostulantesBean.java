@@ -8,6 +8,7 @@ package bean;
 import dominio.Cargo;
 import dominio.Postulante;
 import dominio.Persona;
+import dominio.Resolucion;
 import hibernate.dao.PersonaDao;
 import hibernate.dao.PostulanteDao;
 import hibernate.dao.impl.PersonaDaoImpl;
@@ -39,6 +40,15 @@ public class PostulantesBean extends ConcursoBean implements Serializable {
     private boolean datosValidos, banderaBtn, banderaGanador;
     private String buscado, criterio;
     private Cargo cargoSeleccionado;
+    private Resolucion resolucionSeleccionada;
+
+    public Resolucion getResolucionSeleccionada() {
+        return resolucionSeleccionada;
+    }
+
+    public void setResolucionSeleccionada(Resolucion resolucionSeleccionada) {
+        this.resolucionSeleccionada = resolucionSeleccionada;
+    }
 
     @ManagedProperty("#{beanCargo}")
     private CargoBean beanCargo;
@@ -331,7 +341,8 @@ public class PostulantesBean extends ConcursoBean implements Serializable {
                     postulante.setIdPostulante(listaPostulantes.get(getListaFinalPostulantes().size() - 1).getIdPostulante() + 1);
                 }
 
-                getListaFinalPostulantes().add(postulante);
+                //getListaFinalPostulantes().add(postulante);
+                setListaFinalPostulantes(listaPostulantes);
             }
         }
         pasarVistaDePestania();
@@ -385,4 +396,10 @@ public class PostulantesBean extends ConcursoBean implements Serializable {
         }
     }
 
+    public void limpiarDialogoNuevoPostulante() {
+        System.out.println("beanTribunal -> limpiarDialogoNuevoPostulante--");
+        buscado = "";
+        nuevoPostulante = new Postulante(new Persona());
+
+    }
 }

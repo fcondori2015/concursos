@@ -160,7 +160,10 @@ public class ResolucionBean extends ConcursoBean implements Serializable {
 
         resolucionNueva = new Resolucion(resolucionNueva.getIdResolucion() + 1, new Tribunal(resolucionNueva.getTribunal().getIdTribunal() + 1));
         resolucionNueva.setExpediente(expedienteAuxiliar);
-
+      
+        
+        
+        
         RequestContext context = RequestContext.getCurrentInstance();
         context.update("dlgNuevaResolucion");
     }
@@ -168,7 +171,6 @@ public class ResolucionBean extends ConcursoBean implements Serializable {
     public void guardarResolucion() {
 
         try {
-            //resolucionNueva.setIdResolucion(0);
             String numeroResolucion = resolucionNueva.getNumeroResolucion();
             resolucionNueva.setNumeroResolucion(resolucionNueva.formatearNumero(numeroResolucion) + "-" + dependenciaNumeroResolucion + "/" + anioNumeroResolucion);
 
@@ -177,13 +179,12 @@ public class ResolucionBean extends ConcursoBean implements Serializable {
 
                 resolucionNueva.setProrroga(banderaProrroga);
 
-                resolucionNueva.setExpediente(getExpedienteFinalCargado());
+                resolucionNueva.setExpediente(beanExpediente.getExpedienteNuevo());
                 listaResoluciones.add(resolucionNueva);
 
-                System.out.println("ResolucionBean.guardarResolucion() => " + resolucionNueva.toString());
 
                 nuevoMensajeInfo("Registro de Concursos de Salud - RESOLUCIÓN", "NºResolucion: " + resolucionNueva.getNumeroResolucion()
-                        + " guardada éxitosamente");
+                        +"numero de id Expediente: "+resolucionNueva.getExpediente().getIdExpediente()+ " guardada éxitosamente");
 
                 inicializarResolucionNueva();
             } else {
@@ -199,16 +200,24 @@ public class ResolucionBean extends ConcursoBean implements Serializable {
     public void guardarListaResoluciones() {
 
         //ResolucionDao resolucionDao = new ResolucionDaoImpl();
-        try {
+           try {
+            int cont=0;
+            //Genero los Id para cada cada resolucion
+            ResolucionDao resDao= new ResolucionDaoImpl();
+            TribunalDao tribDao=new TribunalDaoImpl();
+            for (Resolucion resolucion: listaResoluciones){
+                  cont++; 
+                resolucion.setIdResolucion(resDao.obtenerUltimaResolucion().getIdResolucion()+cont);
+                resolucion.setTribunal(new Tribunal(tribDao.obtenerUltimoTribunal().getIdTribunal()+cont));
+            
+            }
             setListaFinalResoluciones(listaResoluciones);
             nuevoMensajeInfo("Registro Provincial de Concursos de Salud", "Se a guardado la lista de resoluciones");
             pasarVistaDePestania();
             datosValidos = true;
-//            for (Resolucion resolucion : listaResoluciones) {
-//                Resolucion nuevaResolucion = new Resolucion(resolucion.getIdResolucion(), resolucion.getExpediente(), resolucion.getTribunal(), resolucion.getEstado(), resolucion.getModificacion(), resolucion.getProrroga(), resolucion.getAntecedente(), resolucion.getOposicion(), resolucion.getClase(), resolucion.getAgrupamiento(), resolucion.getFechaApertura(), resolucion.getFechaCierre(), resolucion.getFechaEjecucion(), resolucion.getFechaPublicacion(), resolucion.getDocumento(), resolucion.getNumeroResolucion(), resolucion.getModificaResolucion(), resolucion.getProrrogaResolucion());
-//                getListaFinalResoluciones().add(nuevaResolucion);
-//                //resolucionDao.insertar(nuevaResolucion);
-//            }
+            System.out.println("beanResolucion.guardarListaResolucio==>Resoluciones cargadas en la listaResoluciones :");
+            
+          
         } catch (HibernateException exHibernate) {
             nuevoMensajeAlerta("Error" + exHibernate.getMessage(), exHibernate.getLocalizedMessage());
         } catch (Exception exGeneral) {

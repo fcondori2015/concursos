@@ -18,6 +18,11 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.ViewScoped;
 import org.hibernate.NonUniqueObjectException;
+import javax.faces.context.FacesContext;
+import javax.faces.event.ActionEvent;
+import javax.faces.application.FacesMessage;
+import javax.faces.view.Location;
+import org.primefaces.context.RequestContext;
 
 /**
  *
@@ -34,13 +39,8 @@ public class ExpedienteBean extends ConcursoBean implements Serializable {
     private List<UnidadDeOrganizacion> listaUnidadDeOrganizacions; //lista que se utiliza para cargar el combo con las areas
     private boolean datosValidos;//Bandera que se referencia a la vista para habilitar la pestaña siguiente
     private List<Expediente> listaExpedientes;
-   
-
-    
 
     //GETTERS & SETTERS
-    
-        
     public Expediente getExpedienteNuevo() {
         return expedienteNuevo;
     }
@@ -72,8 +72,6 @@ public class ExpedienteBean extends ConcursoBean implements Serializable {
     public void setListaExpedientes(List<Expediente> listaExpedientes) {
         this.listaExpedientes = listaExpedientes;
     }
-
-
 
     public List<Expediente> getAllExpedientes() {
         ExpedienteDao expedienteDao = new ExpedienteDaoImpl();
@@ -142,7 +140,7 @@ public class ExpedienteBean extends ConcursoBean implements Serializable {
         try {
             String numExpedienteSinFormato = expedienteNuevo.getUnidadDeOrganizacion().getCodigoUnidadDeOrganizacion() + "-" + expedienteNuevo.getNumero() + "/" + expedienteNuevo.getAnio();
             expedienteNuevo.setNumeroExpediente(formatearExpediente(numExpedienteSinFormato));
-
+     
             //Validamos que los datos guardados en el expediente sean validos y
             //que aparte no exista en la BD
             if (expedienteDao.getExpediente(expedienteNuevo.getNumeroExpediente()) == null) {
@@ -151,14 +149,14 @@ public class ExpedienteBean extends ConcursoBean implements Serializable {
                 //Seteamos el Expediente Final
                 setExpedienteFinalCargado(expedienteNuevo);
 
-                //expedienteDao.insertar(expedienteNuevo);
+            
                 System.out.println("\033[32mExpedienteBean.guardarExpediente() => " + expedienteNuevo.toString());
 
                 datosValidos = true;
                 pasarVistaDePestania();
                 nuevoMensajeInfo("Registro de Concursos de Salud - EXPEDIENTE", "Número: " + expedienteNuevo.getNumeroExpediente() + "\nRégimen: " + expedienteNuevo.getRegimen() + "\nSituación: " + expedienteNuevo.getSituacion());
-                
-                expedienteNuevo = new Expediente(expedienteDao.generarNuevoIdExpediente(), new UnidadDeOrganizacion());
+
+            
             } else {
                 nuevoMensajeAlerta("Registro de Concursos de Salud", "Número de Expediente " + expedienteNuevo.getNumeroExpediente() + " repetido");
             }
@@ -171,9 +169,6 @@ public class ExpedienteBean extends ConcursoBean implements Serializable {
         }
 
     }
-    
-    
-    
 
     /**
      * Funcion que realiza un formato esstructurado para el numero del
@@ -220,13 +215,13 @@ public class ExpedienteBean extends ConcursoBean implements Serializable {
         }
         return numeroExpedienteFormateado;
     }
-    
-    public void limpiar(){
+
+    public void limpiar() {
         ExpedienteDao expedienteDao = new ExpedienteDaoImpl();
         expedienteNuevo = new Expediente(expedienteDao.generarNuevoIdExpediente(), new UnidadDeOrganizacion());
         setExpedienteFinalCargado(expedienteNuevo);
         datosValidos = false;
     }
-    
+
 
 }

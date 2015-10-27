@@ -30,6 +30,7 @@ import hibernate.dao.PostulanteDao;
 import hibernate.dao.impl.EstablecimientoDaoImpl;
 import hibernate.dao.impl.InstitucionDaoImpl;
 import hibernate.dao.impl.PostulanteDaoImpl;
+import java.sql.SQLException;
 
 /**
  *
@@ -42,12 +43,14 @@ public class TribunalBean extends ConcursoBean implements Serializable {
     private static final long serialVersionUID = 1L;
     private TribunalJurado juradoNuevo, juradoSeleccionado;
     private Tribunal tribunalNuevo;
-    private String categoriaJurado, buscado;
+    private String categoriaJurado, buscado, criterio;
     private Persona personaBuscada;
-    private boolean datosValidos, banderaBtn;
+    private boolean datosValidos, banderaBtn, banBDSiisa;
     private List<Persona> listaResultadoBusquedaPersona, listaPersonas;
     private List<TribunalJurado> listaJuradoNuevos;
     private Resolucion resolucionSeleccionada;
+    private List<Tribunal> listaTribunales;
+    private int idResolucionSeleccionada;
 
     @ManagedProperty("#{beanResolucion}")
     private ResolucionBean beanResolucion;
@@ -58,25 +61,43 @@ public class TribunalBean extends ConcursoBean implements Serializable {
     public TribunalBean() {
 
         TribunalJuradoDao tribunalJuradoDao = new TribunalJuradoDaoImpl();
-        
-        //listaJurados = tribJuraDao.getAll();
         listaPersonas = new ArrayList<Persona>();
-        personaBuscada = new Persona();
         listaResultadoBusquedaPersona = new ArrayList<Persona>();
         datosValidos = false;
-        //idJuradoGenerado = tribJuraDao.generarNuevoIdJurado();
-        //idTribunalGenerado = tribunalDao.generarNuevoIdTribunal();
-        //idPersonaGenerado = personaDao.generarIdNuevoPersona();
-        //juradoSeleccionado = new Persona(idPersonaGenerado);
-        tribunalNuevo = new Tribunal();
-        juradoNuevo = new TribunalJurado(tribunalJuradoDao.generarNuevoIdJurado(),new Institucion(), new Persona(), new Establecimiento(), tribunalNuevo, "", true, "");
+        juradoNuevo = new TribunalJurado(tribunalJuradoDao.generarNuevoIdJurado(), new Institucion(), new Persona(), new Establecimiento(), new Tribunal(), "", true, "");
         banderaBtn = false;
-        listaJuradoNuevos = new ArrayList<TribunalJurado>();
-
+        banBDSiisa = false;
+        listaJuradoNuevos = new ArrayList<>();
+        listaTribunales = new ArrayList<>();
+        tribunalNuevo = new Tribunal();
         resolucionSeleccionada = new Resolucion();
     }
 
+    public List<Tribunal> getListaTribunales() {
+        return listaTribunales;
+    }
+
+    public void setListaTribunales(List<Tribunal> listaTribunales) {
+        this.listaTribunales = listaTribunales;
+    }
+
     //GETTERS && SETTERS
+    public int getIdResolucionSeleccionada() {
+        return idResolucionSeleccionada;
+    }
+
+    public void setIdResolucionSeleccionada(int idResolucionSeleccionada) {
+        this.idResolucionSeleccionada = idResolucionSeleccionada;
+    }
+
+    public boolean isBanBDSiisa() {
+        return banBDSiisa;
+    }
+
+    public void setBanBDSiisa(boolean banBDSiisa) {
+        this.banBDSiisa = banBDSiisa;
+    }
+
     public TribunalJurado getJuradoNuevo() {
         return juradoNuevo;
     }
@@ -182,11 +203,9 @@ public class TribunalBean extends ConcursoBean implements Serializable {
     }
 
     //METODOS
-    
-    
-    public void quitarJurado(TribunalJurado jurado){
+    public void quitarJurado(TribunalJurado jurado) {
         System.out.println("TribunalBean.quitarJurado() => " + jurado.toString());
-         for (TribunalJurado j : listaJuradoNuevos) {
+        for (TribunalJurado j : listaJuradoNuevos) {
             if (j.getIdTribunalJurado() == jurado.getIdTribunalJurado()) {
                 listaJuradoNuevos.remove(jurado);
                 break;
@@ -196,29 +215,82 @@ public class TribunalBean extends ConcursoBean implements Serializable {
             datosValidos = false;
         }
     }
-    
+
+    public static long getSerialVersionUID() {
+        return serialVersionUID;
+    }
+
     public void onResolucionSelect() {
+        System.out.println("ENTRO AL METODO ONRESOLUCIONSELECT");
 
-        listaJuradoNuevos = new ArrayList<>();
+        for (Resolucion resolucion : beanResolucion.getListaResoluciones()) {
 
-        for (Resolucion resolucion : getListaFinalResoluciones()) {
-            if (resolucion.getIdResolucion() == resolucionSeleccionada.getIdResolucion()) {
-                resolucionSeleccionada = resolucion;
-                for (TribunalJurado jurado : getListaFinalJurados()) {
-                    if (jurado.getTribunal() == resolucionSeleccionada.getTribunal()) {
-                        listaJuradoNuevos.add(jurado);
-                    }
-                }
+            System.out.println("Id Resolicion: " + resolucion.getIdResolucion() + " Numero de resolucion: " + resolucion.getNumeroResolucion() + " Tribunal: " + resolucion.getTribunal().getIdTribunal());
+
+        }
+        for (Resolucion resolucion : beanResolucion.getListaResoluciones()) {
+            if (resolucion.getIdResolucion() == idResolucionSeleccionada) {
+
+                setResolucionSeleccionada(resolucion);
                 break;
             }
+
         }
+        System.out.println("RESOLUCION SELECCIONADA->>>>" + resolucionSeleccionada.getNumeroResolucion() + " ID Resolucion: " + resolucionSeleccionada.getIdResolucion() + " ID TRIBUNAL " + resolucionSeleccionada.getTribunal().getIdTribunal());
+        RequestContext context = RequestContext.getCurrentInstance();
+        context.update("tblTribunal");
     }
 
     public void buscarPersonaREFEPS() {
-
+        banBDSiisa = false;
+        ConexionRefeps conexionRefeps = new ConexionRefeps();
+        RequestContext context = RequestContext.getCurrentInstance();
         try {
-            ConexionRefeps conexionRefeps = new ConexionRefeps();
-            listaPersonas = conexionRefeps.buscarProfesionalRefepsNombreCompleto(buscado);
+            switch (criterio) {
+                case "dni": {
+                    if (conexionRefeps.buscarProfesionalRefepsDni(buscado).getDni() != null) {
+                        banBDSiisa = true;
+                        juradoNuevo.setPersona(conexionRefeps.buscarProfesionalRefepsDni(buscado));
+                        System.out.println("beanTribunal->El DNI " + conexionRefeps.buscarProfesionalRefepsDni(buscado).getDni() + " Se encontró en la BDSIISA");
+                        nuevoMensajeInfo("Registro de Concursos de Salud - JURADO ", "Se a encontrado el profesional con DNI :" + conexionRefeps.buscarProfesionalRefepsDni(buscado).getDni() + ".");
+
+                    } else {
+                        banBDSiisa = false;
+                        juradoNuevo.setPersona(conexionRefeps.buscarProfesionalRefepsDni(buscado));
+                        System.out.println("beanTribunal-> El DNI " + buscado + " No se encontró en la BDSIISA");
+                    }
+                    break;
+
+                }
+
+                case "nombre": {
+                    listaResultadoBusquedaPersona = conexionRefeps.buscarProfesionalRefepsNombreCompleto(buscado);
+                    if (listaResultadoBusquedaPersona.size() != 0) {
+                        banBDSiisa = true;
+                        System.out.println("beanTribunal->Se encontró en la BDSIISA");
+                        context.execute("PF('dlgSeleccionJuradoRefeps').show();");
+                        context.update("dlgSeleccionJuradoRefeps");
+                    } else {
+                        banBDSiisa = false;
+                        System.out.println("beanTribunal-> No se encontró en la BDSIISA");
+                    }
+                    break;
+                }
+
+                case "apellido": {
+                    listaResultadoBusquedaPersona = conexionRefeps.buscarProfesionalRefepsApellido(buscado);
+                    if (listaResultadoBusquedaPersona.size() != 0) {
+                        banBDSiisa = true;
+                        System.out.println("beanTribunal->Se encontró en la BDSIISA");
+                        context.execute("PF('dlgSeleccionJuradoRefeps').show();");
+                        context.update("dlgSeleccionJuradoRefeps");
+                    } else {
+                        banBDSiisa = false;
+                        System.out.println("beanTribunal-> No se encontró en la BDSIISA");
+                    }
+                    break;
+                }
+            }
 
         } catch (NullPointerException exNulo) {
             System.out.println("Nombre buscado: " + buscado);
@@ -237,6 +309,75 @@ public class TribunalBean extends ConcursoBean implements Serializable {
         } else {
             banderaBtn = true;
         }
+    }
+
+    public void buscarPorCriterio() throws SQLException {
+        PersonaDao personaDao = new PersonaDaoImpl();
+        Persona personaEncontrada = new Persona();
+        RequestContext context = RequestContext.getCurrentInstance();
+        try {
+
+            switch (criterio) {
+                case "dni": {
+                    buscarPersonaREFEPS();
+                    if (!banBDSiisa) {
+                        System.out.println("beanTribunal-->buscarPorCriterio DNI BD Concurso Personas.");
+                        personaEncontrada = personaDao.buscarPorDni(Integer.parseInt(buscado));
+                        if (personaEncontrada != null) {
+                            juradoNuevo.setPersona(personaEncontrada);
+                            nuevoMensajeInfo("Registro de Concursos de Salud - JURADO", "Se a encontrado la persona con el DNI :" + buscado + ".");
+                        } else {
+                            juradoNuevo.setPersona(personaEncontrada);
+                            nuevoMensajeAlerta("Registro de Concursos de Salud - JURADO", "No se a encontrado la persona con el DNI :" + buscado + ".");
+                        }
+
+                    }
+                    break;
+                }
+                case "nombre": {
+                    buscarPersonaREFEPS();
+                    if (!banBDSiisa) {
+                        listaResultadoBusquedaPersona = personaDao.buscarPorNombre(buscado);
+
+                        if (listaResultadoBusquedaPersona != null) {
+                            context.execute("PF('dlgSeleccionJuradoRefeps').show();");
+                            context.update("dlgSeleccionJuradoRefeps");
+                        } else {
+                            juradoNuevo.setPersona(personaEncontrada);
+                            nuevoMensajeAlerta("Registro de Concursos de Salud - JURADO", "No se a encontrado la persona con el Nombre :" + buscado + ".");
+                        }
+
+                    }
+                    break;
+                }
+                case "apellido": {
+                    buscarPersonaREFEPS();
+                    if (!banBDSiisa) {
+                        listaResultadoBusquedaPersona = personaDao.buscarPorApellido(buscado);
+
+                        if (listaResultadoBusquedaPersona != null) {
+                            context.execute("PF('dlgSeleccionJuradoRefeps').show();");
+                            context.update("dlgSeleccionJuradoRefeps");
+                        } else {
+                            juradoNuevo.setPersona(personaEncontrada);
+                            nuevoMensajeAlerta("Registro de Concursos de Salud - JURADO", "No se a encontrado la persona con el Apellido :" + buscado + ".");
+                        }
+
+                    }
+                    break;
+                }
+            }
+        } catch (NumberFormatException exFormato) {
+            nuevoMensajeAlerta("Registro de Concursos de Salud - Error", "Ingrese DNI valido para buscar");
+        }
+    }
+
+    public String getCriterio() {
+        return criterio;
+    }
+
+    public void setCriterio(String criterio) {
+        this.criterio = criterio;
     }
 
     public void seleccionarPersona(SelectEvent event) {
@@ -262,9 +403,10 @@ public class TribunalBean extends ConcursoBean implements Serializable {
         }
         juradoNuevo.setPersona(personaSelec);
         System.out.println("TribunalBean.seleccionarPersona() => Se a seleccionado la " + juradoNuevo.getPersona().toString());
+
         RequestContext context = RequestContext.getCurrentInstance();
-        context.execute("PF('dlgProfesionalesResultado').hide();");
-        context.update("formJuradoNuevo");
+        context.execute("PF('dlgSeleccionJuradoRefeps').hide();");
+
     }
 
     public void seleccionarInstitucion() {
@@ -290,14 +432,8 @@ public class TribunalBean extends ConcursoBean implements Serializable {
     public void guardarJuradoNuevo() {
 
         try {
+            TribunalJuradoDao jurDao = new TribunalJuradoDaoImpl();
             PersonaDao persDao = new PersonaDaoImpl();
-
-            for (Resolucion resolucion : getListaFinalResoluciones()) {
-                if (resolucion.getIdResolucion() == resolucionSeleccionada.getIdResolucion()) {
-                    resolucionSeleccionada = resolucion;
-                    break;
-                }
-            }
 
             //Controla por el Dni si existe la persona cargada en la bd concurso.
             if (!persDao.existeDniPersona(juradoNuevo.getPersona())) {
@@ -311,7 +447,7 @@ public class TribunalBean extends ConcursoBean implements Serializable {
                 persDao.insertar(personaNueva);
             }
 
-            juradoNuevo.setTribunal(resolucionSeleccionada.getTribunal());
+            System.out.println("beanTribunalBean====>Jurado en Resolucion con id :" + resolucionSeleccionada.getIdResolucion() + " con tribunal id " + resolucionSeleccionada.getTribunal().getIdTribunal());
 
             //Agrega el jurado nuevo a la lista de jurados.
             if (!listaJuradoNuevos.contains(juradoNuevo)) {
@@ -323,14 +459,16 @@ public class TribunalBean extends ConcursoBean implements Serializable {
                 InstitucionDao institucionDao = new InstitucionDaoImpl();
                 juradoNuevo.setInstitucion(institucionDao.getInstitucion(juradoNuevo.getInstitucion().getIdInstitucion()));
 
+                juradoNuevo.setTribunal(resolucionSeleccionada.getTribunal());
+
                 //Guardamos
                 System.out.println("TribunalBean.guardarJuradoNuevo() => Guardando " + juradoNuevo.toString());
                 listaJuradoNuevos.add(juradoNuevo);
             }
 
-            //Inicializa el jurado Nuevo y el Seleccionado
+            //Inicializa el jurado Nuevo y el seleccionado
             juradoSeleccionado = new TribunalJurado();
-            juradoNuevo = new TribunalJurado(juradoNuevo.getIdTribunalJurado() + 1, new Institucion(), new Persona(persDao.generarIdNuevoPersona(), "M"), new Establecimiento(), resolucionSeleccionada.getTribunal(), "", false, "");
+            juradoNuevo = new TribunalJurado(jurDao.generarNuevoIdJurado() + listaJuradoNuevos.size(), new Institucion(), new Persona(persDao.generarIdNuevoPersona(), "M"), new Establecimiento(), new Tribunal(), "", false, "");
 
             buscado = "";
         } catch (Exception ex1) {
@@ -340,47 +478,88 @@ public class TribunalBean extends ConcursoBean implements Serializable {
 
     }
 
-    public void guardarTribunalNuevo() {
+    public void limpiarDialogoNuevoJurado() {
+        System.out.println("beanTribunal -> limpiarDialogoNuevoJurado--");
+        PersonaDao persDao = new PersonaDaoImpl();
+        buscado = "";
+        juradoSeleccionado = new TribunalJurado();
+        juradoNuevo = new TribunalJurado(juradoNuevo.getIdTribunalJurado() + 1, new Institucion(), new Persona(persDao.generarIdNuevoPersona(), "M"), new Establecimiento(), resolucionSeleccionada.getTribunal(), "", false, "");
+        RequestContext context = RequestContext.getCurrentInstance();
+        context.execute("PF('dlgNuevoJurado').show()");
+        context.update("dlgNuevoJurado");
+    }
 
-        PostulanteDao postulanteDao = new PostulanteDaoImpl();
+    public void guardarTribunalNuevo2() {
+
         try {
+            PostulanteDao postulanteDao = new PostulanteDaoImpl();
+            TribunalJuradoDao tribDao = new TribunalJuradoDaoImpl();
             //Seteamos la cantidad de jurados para el nuevoTribunal
 
-            for (Resolucion resolucion : getListaFinalResoluciones()) {
-                if (resolucionSeleccionada.getIdResolucion() == resolucion.getIdResolucion()) {
-                    tribunalNuevo = resolucion.getTribunal();
-                    tribunalNuevo.setCantidadMiembros(Short.parseShort(String.valueOf(getListaJuradoNuevos().size())));
-                    break;
-                }
+            for (Resolucion resolucion : beanResolucion.getListaResoluciones()) {
+
+                tribunalNuevo.setIdTribunal(resolucion.getTribunal().getIdTribunal());
+
+                listaTribunales.add(tribunalNuevo);
+
+                tribunalNuevo = new Tribunal();
             }
 
-            //seteamos el tribunal en la resolucion Seleccionada
-            //Tengo que cambiar la forma de recorrer la lista en memoria de resolucion
-            resolucionSeleccionada.setTribunal(tribunalNuevo);
-            for (Resolucion resolucion : getListaFinalResoluciones()) {
-                if (resolucionSeleccionada.getNumeroResolucion().equalsIgnoreCase(resolucion.getNumeroResolucion())) {
-                    //Primero obtenemos el elemento resolucion de la lista y despues
-                    //le seteamos el tribunal
-                    getListaFinalResoluciones().get(getListaFinalResoluciones().indexOf(resolucion)).setTribunal(tribunalNuevo);
+            int cont = 0;
+            for (TribunalJurado jur : listaJuradoNuevos) {
 
-                    break;
-                }
+                jur.setIdTribunalJurado(tribDao.generarNuevoIdJurado() + cont);
+                cont++;
             }
+
+            //Determina la cantidad de jurados por tribunal.
+            for (Tribunal tribunal : listaTribunales) {
+                int contJurados = 0;
+                for (TribunalJurado jurado : listaJuradoNuevos) {
+
+                    if (jurado.getTribunal().getIdTribunal() == tribunal.getIdTribunal()) {
+
+                        contJurados++;
+                    }
+                }
+                tribunal.setCantidadMiembros((short)contJurados);
+            }
+
+            setListaFinalJurados(listaJuradoNuevos);
+            setListaFinalTribunales(listaTribunales);
+//            for (Resolucion resolucion : getListaFinalResoluciones()) {
+//                if (resolucionSeleccionada.getIdResolucion() == resolucion.getIdResolucion()) {
+//                    tribunalNuevo = resolucion.getTribunal();
+//                    tribunalNuevo.setCantidadMiembros(Short.parseShort(String.valueOf(getListaJuradoNuevos().size())));
+//                    break;
+//                }
+//            }
+//
+//            //seteamos el tribunal en la resolucion Seleccionada
+//            //Tengo que cambiar la forma de recorrer la lista en memoria de resolucion
+//            resolucionSeleccionada.setTribunal(tribunalNuevo);
+//            for (Resolucion resolucion : getListaFinalResoluciones()) {
+//                if (resolucionSeleccionada.getNumeroResolucion().equalsIgnoreCase(resolucion.getNumeroResolucion())) {
+//                    //Primero obtenemos el elemento resolucion de la lista y despues
+//                    //le seteamos el tribunal
+//                    getListaFinalResoluciones().get(getListaFinalResoluciones().indexOf(resolucion)).setTribunal(tribunalNuevo);
+//
+//                    break;
+//                }
+//            }
 
             //getListaFinalResoluciones().get(resolucionSeleccionada.getIdResolucion()).setTribunal(tribunalNuevo);
             //Guardamos el tribunal en la lista final de tribunales
-            getListaFinalTribunales().add(tribunalNuevo);
-
-            for (TribunalJurado jurado : listaJuradoNuevos) {
-                jurado.setTribunal(tribunalNuevo);
-//                if (getListaFinalJurados().isEmpty()) {
-//                    jurado.setIdTribunalJurado(postulanteDao.generarIdNuevoPostulante());
-//                } else {
-//                    jurado.setIdTribunalJurado(getListaFinalJurados().get(getListaFinalJurados().size() - 1).getIdTribunalJurado() + 1);
-//                }
-                getListaFinalJurados().add(jurado);
-            }
-
+//            getListaFinalTribunales().add(tribunalNuevo);
+//            for (TribunalJurado jurado : listaJuradoNuevos) {
+//                jurado.setTribunal(tribunalNuevo);
+////                if (getListaFinalJurados().isEmpty()) {
+////                    jurado.setIdTribunalJurado(postulanteDao.generarIdNuevoPostulante());
+////                } else {
+////                    jurado.setIdTribunalJurado(getListaFinalJurados().get(getListaFinalJurados().size() - 1).getIdTribunalJurado() + 1);
+////                }
+//                getListaFinalJurados().add(jurado);
+//            }
             datosValidos = true;
             nuevoMensajeInfo("Registro Provincial de Concursos de Salud", "Se a guardado el tribunal con los postulantes seleccionados.");
             pasarVistaDePestania();
@@ -388,7 +567,6 @@ public class TribunalBean extends ConcursoBean implements Serializable {
             nuevoMensajeAlerta("Error! al guardar el tribunal nuevo", exGeneral.getMessage());
             exGeneral.printStackTrace();
         }
-
     }
 
 }

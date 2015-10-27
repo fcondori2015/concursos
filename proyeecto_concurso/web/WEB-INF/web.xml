@@ -26,4 +26,5 @@
         <param-name>primefaces.THEME</param-name>
         <param-value>casablanca</param-value>
     </context-param>
-</web-app>
+    
+   </web-app>

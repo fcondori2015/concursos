@@ -16,6 +16,10 @@ import bd.ConexionRemota;
 import com.csvreader.CsvWriter;
 import dominio.Profesion;
 import dominio.Usuario;
+import hibernate.dao.CargoDao;
+import hibernate.dao.ProfesionDao;
+import hibernate.dao.impl.CargoDaoImpl;
+import hibernate.dao.impl.ProfesionDaoImpl;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -25,7 +29,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
+import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedProperty;
+import javax.faces.event.ActionEvent;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hssf.util.HSSFColor;
@@ -34,6 +41,17 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Workbook;
+import java.time.DateTimeException;
+import java.io.DataInput;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import static javax.print.attribute.Size2DSyntax.MM;
+import org.primefaces.context.RequestContext;
+import org.primefaces.event.SelectEvent;
+import org.primefaces.model.StreamedContent;
 
 /**
  *
@@ -41,64 +59,98 @@ import org.apache.poi.ss.usermodel.Workbook;
  */
 @ManagedBean(name = "beanExportacion")
 @ViewScoped
-public class ExportacionBean implements Serializable {
+
+public class ExportacionBean extends ConcursoBean implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private DefaultStreamedContent file;
-    private Profesion profesion;
-    private String FechaDesde;
-    private String FechaHasta;
+    private DefaultStreamedContent files;
+    private Profesion seleccionProfesion;
+    private Profesion profesionSeleccionada;
+    private Date FechaDesde;
+    private Date FechaHasta;
     private String nombreProfesion;
+    private List<Profesion> listaProfesiones;
+    private StreamedContent archivo;
 
     @ManagedProperty("#{beanLogin}")
     private LoginBean beanLogin;
+    private StreamedContent file;
+
+    public StreamedContent getFile() {
+        return file;
+    }
+
+    public void setFile(StreamedContent file) {
+        this.file = file;
+    }
 
     /**
      * Creates a new instance of CargoBean
+     *
+     * @throws java.io.FileNotFoundException
      */
-    public ExportacionBean() {
+    public ExportacionBean() throws FileNotFoundException {
 //
-//        InputStream stream = ((ServletContext) FacesContext.getCurrentInstance().getExternalContext().getContext()).getResourceAsStream("/home/favio/Descargas/downloaded_optimus.jpg");
+
 //        file = new DefaultStreamedContent(stream, "image/jpg", "downloaded_optimus.jpg");
         System.out.println("ExporeacionBean) => Se ah creado el bean ExporacionBean");
-        
-        
-        
+
+        ProfesionDao profDao = new ProfesionDaoImpl();
+        CargoDao cargoDao = new CargoDaoImpl();
+        listaProfesiones = profDao.getAll();
+        seleccionProfesion = new Profesion();
+        setProfesionSeleccionada(new Profesion(0));
+
+        //InputStream stream = ((ServletContext) FacesContext.getCurrentInstance().getExternalContext().getContext()).getResourceAsStream("/home/favio/Descargas/downloaded_optimus.jpg");
+        InputStream stream = new FileInputStream("/home/favio/Descargas/foto.jpg");
+        file = new DefaultStreamedContent(stream, "image/jpg", "foto.jpg");
     }
 
     /**
      * GETTERS & SETTERS
+     *
+     * @return
      */
-    public DefaultStreamedContent getFile() {
-        return file;
+    public StreamedContent getArchivo() {
+        return archivo;
     }
 
-    public void setFile(DefaultStreamedContent file) {
-        this.file = file;
+    public void setArchivo(StreamedContent archivo) {
+        this.archivo = archivo;
     }
 
-    public Profesion getProfesion() {
-        return profesion;
+    public DefaultStreamedContent getFiles() {
+        return files;
     }
 
-    public void setProfesion(Profesion profesion) {
-        this.profesion = profesion;
+    public void setFiles(DefaultStreamedContent files) {
+        this.files = files;
     }
 
-    public String getFechaDesde() {
+    public Profesion getProfesionSeleccionada() {
+        return profesionSeleccionada;
+    }
+
+    public void setProfesionSeleccionada(Profesion profesionSeleccionada) {
+        this.profesionSeleccionada = profesionSeleccionada;
+    }
+
+    public Date getFechaDesde() {
         return FechaDesde;
     }
 
-    public void setFechaDesde(String FechaDesde) {
+    public void setFechaDesde(Date FechaDesde) {
         this.FechaDesde = FechaDesde;
     }
 
-    public String getFechaHasta() {
+    public Date getFechaHasta() {
         return FechaHasta;
+
     }
 
-    public void setFechaHasta(String FechaHasta) {
+    public void setFechaHasta(Date FechaHasta) {
         this.FechaHasta = FechaHasta;
+
     }
 
     public LoginBean getBeanLogin() {
@@ -115,6 +167,22 @@ public class ExportacionBean implements Serializable {
 
     public void setNombreProfesion(String nombreProfesion) {
         this.nombreProfesion = nombreProfesion;
+    }
+
+    public List<Profesion> getListaProfesiones() {
+        return listaProfesiones;
+    }
+
+    public void setListaProfesiones(List<Profesion> listaProfesiones) {
+        this.listaProfesiones = listaProfesiones;
+    }
+
+    public Profesion getSeleccionProfesion() {
+        return seleccionProfesion;
+    }
+
+    public void setSeleccionProfesion(Profesion seleccionProfesion) {
+        this.seleccionProfesion = seleccionProfesion;
     }
 
     /**
@@ -265,6 +333,8 @@ public class ExportacionBean implements Serializable {
         //To change body of generated methods, choose Tools | Templates.
 
         try {
+
+            nuevoMensajeInfo("Registro Provincial de Concursos", "Archivo Generado");
             System.out.println("beanExportacion ==> creacion XLS");
             ConexionRemota conexion = new ConexionRemota();
             String driver = "org.postgresql.Driver";
@@ -349,14 +419,16 @@ public class ExportacionBean implements Serializable {
             fila = hoja.createRow(3);
             celda = fila.createCell(0);
             celda.setCellStyle(stilo2);
-            celda.setCellValue("Filtro por profesion: "+nombreProfesion+";");
+            celda.setCellValue("Filtro por profesion: " + profesionSeleccionada.getNombreProfesion() + ";");
             fila = hoja.createRow(4);
             celda = fila.createCell(0);
             celda.setCellStyle(stilo2);
-            celda.setCellValue("Fecha de publicación desde: " + "05-07-2015");
+            DateFormat dfd = DateFormat.getDateInstance();
+            celda.setCellValue("Fecha de publicación desde: " + dfd.format(FechaDesde));
             celda = fila.createCell(1);
             celda.setCellStyle(stilo2);
-            celda.setCellValue("Fecha de publicación hasta: " + "18-09-2015");
+            DateFormat dfh = DateFormat.getDateInstance();
+            celda.setCellValue("Fecha de publicación hasta: " + dfh.format(FechaHasta));
 
             numeroFila = 6;
             fila = hoja.createRow(numeroFila);
@@ -586,10 +658,30 @@ public class ExportacionBean implements Serializable {
             stmt2.close();
             con.close();
 
+            System.out.println("Fecha Desde :" + FechaDesde);
+            System.out.println("Fecha Hasta :" + FechaHasta);
+            System.out.println("Nombre de profesion: " + profesionSeleccionada.getNombreProfesion());
         } catch (Exception e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+
+    }
+
+    public void seteaProfesion() {
+
+        for (Profesion prof : listaProfesiones) {
+            if (prof.getIdProfesion() == seleccionProfesion.getIdProfesion()) {
+                profesionSeleccionada = prof;
+                System.out.println("Nombre de profesion seleccionado: " + profesionSeleccionada.getNombreProfesion());
+
+                break;
+            }
+        }
+
+    }
+
+    public void onDateSelect(SelectEvent event) {
 
     }
 
@@ -642,4 +734,5 @@ public class ExportacionBean implements Serializable {
 //        }
 
     }
+
 }
